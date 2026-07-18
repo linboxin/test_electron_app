@@ -9,5 +9,9 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^37.2.0"
+  },
+  "dependencies": {
+    "@appcontextprotocol/app-sdk": "file:vendor/appcontextprotocol-app-sdk-0.1.0.tgz",
+    "@appcontextprotocol/protocol": "file:vendor/appcontextprotocol-protocol-0.1.0.tgz"
   }
 }
