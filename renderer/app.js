@@ -24,6 +24,7 @@ function logActivity(message) {
   entry.appendChild(document.createTextNode(message));
   log.prepend(entry);
   while (log.children.length > 30) log.lastChild.remove();
+  window.acp?.emitEvent('activity.logged', { message });
 }
 
 function showToast(message, type = 'success') {
@@ -39,6 +40,8 @@ function updateStats() {
   $('stat-completed-value').textContent = state.tasks.filter((t) => t.done).length;
   $('stat-clicks-value').textContent = state.clicks;
   $('stat-forms-value').textContent = state.formsSubmitted;
+  window.acp?.notifyStateChanged('app_view');
+  window.acp?.notifyStateChanged('tasks');
 }
 
 document.addEventListener('click', (e) => {
@@ -53,6 +56,7 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.page === page));
   document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === `page-${page}`));
   logActivity(`Navigated to ${page} page`);
+  window.acp?.notifyStateChanged('app_view');
 }
 
 document.querySelectorAll('.nav-item').forEach((btn) => {
@@ -448,9 +452,226 @@ async function loadAppInfo() {
   $('sidebar-version').textContent = `v${info.appVersion} · Electron ${info.electron}`;
 }
 
+// ---------- ACP (App Context Protocol) ----------
+function initAcp() {
+  if (!window.acp) return;
+  const acp = window.acp;
+  const obj = (properties, required) => ({ type: 'object', properties, required });
+
+  acp.registerState('app_view', 'Current page and headline stats', () => ({
+    page: document.querySelector('.nav-item.active')?.dataset.page || 'dashboard',
+    openTasks: state.tasks.filter((t) => !t.done).length,
+    completedTasks: state.tasks.filter((t) => t.done).length,
+    clicks: state.clicks,
+    formsSubmitted: state.formsSubmitted
+  }));
+
+  acp.registerState('tasks', 'All tasks with id, title, priority, done', () => state.tasks);
+
+  acp.registerState('table_view', 'Employee table query, sort, and page', () => ({ ...state.table }));
+
+  acp.registerState('settings', 'Theme, font size, and display name', () => ({
+    theme: localStorage.getItem('theme') || 'light',
+    fontSize: Number(localStorage.getItem('fontSize') || '16'),
+    displayName: localStorage.getItem('displayName') || ''
+  }));
+
+  acp.registerAction(
+    {
+      name: 'navigate',
+      description: 'Switch to one of the app pages',
+      paramsSchema: obj(
+        { page: { type: 'string', enum: ['dashboard', 'forms', 'tasks', 'table', 'widgets', 'settings'] } },
+        ['page']
+      )
+    },
+    ({ page }) => {
+      navigate(page);
+      return { page };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'add_task',
+      description: 'Add a task to the task list',
+      paramsSchema: obj(
+        {
+          title: { type: 'string', minLength: 1 },
+          priority: { type: 'string', enum: ['low', 'medium', 'high'] }
+        },
+        ['title']
+      )
+    },
+    ({ title, priority }) => {
+      const task = { id: state.nextTaskId++, title, priority: priority || 'medium', done: false };
+      state.tasks.push(task);
+      renderTasks();
+      updateStats();
+      logActivity(`Task "${title}" added`);
+      return task;
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'set_task_done',
+      description: 'Mark a task as done or active',
+      paramsSchema: obj({ taskId: { type: 'integer' }, done: { type: 'boolean' } }, ['taskId', 'done'])
+    },
+    ({ taskId, done }) => {
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (!task) throw new Error(`no task with id ${taskId}`);
+      task.done = done;
+      renderTasks();
+      updateStats();
+      logActivity(`Task "${task.title}" marked ${done ? 'done' : 'active'}`);
+      return task;
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'delete_task',
+      description: 'Delete a task from the list',
+      destructive: true,
+      paramsSchema: obj({ taskId: { type: 'integer' } }, ['taskId'])
+    },
+    ({ taskId }) => {
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (!task) throw new Error(`no task with id ${taskId}`);
+      state.tasks = state.tasks.filter((t) => t.id !== taskId);
+      renderTasks();
+      updateStats();
+      logActivity(`Task "${task.title}" deleted`);
+      return { deleted: taskId };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'search_employees',
+      description: 'Search the employee table by name, role, or city and return matches',
+      paramsSchema: obj({ query: { type: 'string' } }, ['query'])
+    },
+    ({ query }) => {
+      $('input-table-search').value = query;
+      state.table.query = query.trim();
+      state.table.page = 1;
+      renderTable();
+      const q = query.trim().toLowerCase();
+      const rows = employees.filter(
+        (e) => !q || e.name.toLowerCase().includes(q) || e.role.toLowerCase().includes(q) || e.city.toLowerCase().includes(q)
+      );
+      return { count: rows.length, rows: rows.slice(0, 10) };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'sort_table',
+      description: 'Sort the employee table by a column',
+      paramsSchema: obj(
+        {
+          key: { type: 'string', enum: ['id', 'name', 'role', 'city', 'salary'] },
+          ascending: { type: 'boolean' }
+        },
+        ['key']
+      )
+    },
+    ({ key, ascending }) => {
+      state.table.sortKey = key;
+      state.table.sortAsc = ascending !== false;
+      renderTable();
+      logActivity(`Table sorted by ${key} (${state.table.sortAsc ? 'ascending' : 'descending'})`);
+      return { ...state.table };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'fill_profile_form',
+      description: 'Fill the profile form and optionally submit it; returns the submitted data or validation state',
+      paramsSchema: obj(
+        {
+          name: { type: 'string' },
+          email: { type: 'string' },
+          password: { type: 'string' },
+          bio: { type: 'string' },
+          submit: { type: 'boolean' }
+        },
+        ['name', 'email', 'password']
+      )
+    },
+    (args) => {
+      const form = $('profile-form');
+      navigate('forms');
+      form.name.value = args.name;
+      form.email.value = args.email;
+      form.password.value = args.password;
+      if (args.bio) form.bio.value = args.bio;
+      if (args.submit === false) return { submitted: false };
+      $('check-terms').checked = true;
+      const before = state.formsSubmitted;
+      form.requestSubmit();
+      const submitted = state.formsSubmitted > before;
+      return {
+        submitted,
+        result: submitted ? JSON.parse($('form-result-json').textContent) : null,
+        errors: submitted
+          ? []
+          : ['error-name', 'error-email', 'error-password', 'error-terms'].map((id) => $(id).textContent).filter(Boolean)
+      };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'set_theme',
+      description: 'Switch between light and dark theme',
+      paramsSchema: obj({ theme: { type: 'string', enum: ['light', 'dark'] } }, ['theme'])
+    },
+    ({ theme }) => {
+      localStorage.setItem('theme', theme);
+      applySettings();
+      logActivity(`Theme changed to ${theme}`);
+      window.acp?.notifyStateChanged('settings');
+      return { theme };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'set_counter',
+      description: 'Set the widgets-page counter to a value',
+      paramsSchema: obj({ value: { type: 'integer' } }, ['value'])
+    },
+    ({ value }) => {
+      setCounter(value);
+      return { value };
+    }
+  );
+
+  acp.registerAction(
+    {
+      name: 'show_toast',
+      description: 'Show an in-app toast message',
+      paramsSchema: obj(
+        { message: { type: 'string' }, type: { type: 'string', enum: ['success', 'error'] } },
+        ['message']
+      )
+    },
+    ({ message, type }) => {
+      showToast(message, type || 'success');
+      return { shown: true };
+    }
+  );
+}
+
 // ---------- Init ----------
 applySettings();
 renderTasks();
 renderTable();
 updateStats();
 loadAppInfo();
+initAcp();

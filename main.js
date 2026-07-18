@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, clipboard, Notification, shell } = require('electron');
 const path = require('path');
+const { attachAcp } = require('@appcontextprotocol/app-sdk/electron');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -11,7 +12,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: false
     }
   });
 
@@ -65,8 +67,33 @@ ipcMain.handle('shell:openExternal', (event, url) => {
   return false;
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow();
+
+  const acp = await attachAcp({
+    appId: 'com.linboxin.test-bench',
+    name: 'Computer-Use Test Bench',
+    version: app.getVersion()
+  });
+
+  acp.exposeState('app_info', { description: 'Runtime versions and platform' }, () => ({
+    appVersion: app.getVersion(),
+    electron: process.versions.electron,
+    platform: process.platform
+  }));
+
+  acp.action('show_notification', {
+    description: 'Show a system notification',
+    params: {
+      type: 'object',
+      properties: { title: { type: 'string' }, body: { type: 'string' } },
+      required: ['title', 'body']
+    },
+    handler: ({ title, body }) => {
+      new Notification({ title, body }).show();
+      return { shown: true };
+    }
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

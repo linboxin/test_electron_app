@@ -1,4 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const { exposeAcpBridge } = require('@appcontextprotocol/app-sdk/electron/preload');
+
+exposeAcpBridge();
 
 contextBridge.exposeInMainWorld('api', {
   getAppInfo: () => ipcRenderer.invoke('app:info'),
