@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>Computer-Use Test Bench</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar navigation -->
+    <nav class="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🧪</span>
+        <span class="brand-name">Test Bench</span>
+      </div>
+      <ul class="nav-list">
+        <li><button class="nav-item active" id="nav-dashboard" data-page="dashboard">🏠 Dashboard</button></li>
+        <li><button class="nav-item" id="nav-forms" data-page="forms">📝 Forms</button></li>
+        <li><button class="nav-item" id="nav-tasks" data-page="tasks">✅ Tasks</button></li>
+        <li><button class="nav-item" id="nav-table" data-page="table">📊 Data Table</button></li>
+        <li><button class="nav-item" id="nav-widgets" data-page="widgets">🧩 Widgets</button></li>
+        <li><button class="nav-item" id="nav-settings" data-page="settings">⚙️ Settings</button></li>
+      </ul>
+      <div class="sidebar-footer" id="sidebar-version">v1.0.0</div>
+    </nav>
+
+    <!-- Main content area -->
+    <main class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="page active" id="page-dashboard" aria-label="Dashboard page">
+        <h1>Dashboard</h1>
+        <p class="subtitle" id="dashboard-greeting">Welcome back!</p>
+
+        <div class="card-grid">
+          <div class="stat-card" id="stat-tasks">
+            <div class="stat-value" id="stat-tasks-value">0</div>
+            <div class="stat-label">Open Tasks</div>
+          </div>
+          <div class="stat-card" id="stat-completed">
+            <div class="stat-value" id="stat-completed-value">0</div>
+            <div class="stat-label">Completed Tasks</div>
+          </div>
+          <div class="stat-card" id="stat-clicks">
+            <div class="stat-value" id="stat-clicks-value">0</div>
+            <div class="stat-label">Buttons Clicked</div>
+          </div>
+          <div class="stat-card" id="stat-forms">
+            <div class="stat-value" id="stat-forms-value">0</div>
+            <div class="stat-label">Forms Submitted</div>
+          </div>
+        </div>
+
+        <h2>Quick Actions</h2>
+        <div class="button-row">
+          <button class="btn primary" id="action-new-task">New Task</button>
+          <button class="btn" id="action-goto-forms">Fill a Form</button>
+          <button class="btn" id="action-goto-table">Browse Data</button>
+          <button class="btn danger" id="action-clear-log">Clear Activity Log</button>
+        </div>
+
+        <h2>Activity Log</h2>
+        <ul class="activity-log" id="activity-log" aria-label="Activity log">
+          <li class="log-entry muted" id="log-empty">No activity yet. Interact with the app to see events here.</li>
+        </ul>
+      </section>
+
+      <!-- ============ FORMS ============ -->
+      <section class="page" id="page-forms" aria-label="Forms page">
+        <h1>Forms</h1>
+        <p class="subtitle">A form with every common input type. Fill it out and submit.</p>
+
+        <form id="profile-form" novalidate>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="input-name">Full Name <span class="required">*</span></label>
+              <input type="text" id="input-name" name="name" placeholder="Jane Doe" required />
+              <span class="field-error" id="error-name"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="input-email">Email <span class="required">*</span></label>
+              <input type="email" id="input-email" name="email" placeholder="jane@example.com" required />
+              <span class="field-error" id="error-email"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="input-password">Password <span class="required">*</span></label>
+              <input type="password" id="input-password" name="password" placeholder="At least 8 characters" required />
+              <span class="field-error" id="error-password"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="input-birthday">Date of Birth</label>
+              <input type="date" id="input-birthday" name="birthday" />
+            </div>
+
+            <div class="form-field">
+              <label for="select-country">Country</label>
+              <select id="select-country" name="country">
+                <option value="">— Select a country —</option>
+                <option value="us">United States</option>
+                <option value="uk">United Kingdom</option>
+                <option value="de">Germany</option>
+                <option value="jp">Japan</option>
+                <option value="au">Australia</option>
+                <option value="br">Brazil</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="input-website">Website</label>
+              <input type="url" id="input-website" name="website" placeholder="https://example.com" />
+            </div>
+          </div>
+
+          <fieldset class="form-field">
+            <legend>Preferred Contact Method</legend>
+            <div class="radio-row">
+              <label class="radio-label"><input type="radio" name="contact" value="email" id="radio-contact-email" checked /> Email</label>
+              <label class="radio-label"><input type="radio" name="contact" value="phone" id="radio-contact-phone" /> Phone</label>
+              <label class="radio-label"><input type="radio" name="contact" value="mail" id="radio-contact-mail" /> Postal Mail</label>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-field">
+            <legend>Interests</legend>
+            <div class="checkbox-row">
+              <label class="checkbox-label"><input type="checkbox" name="interests" value="tech" id="check-tech" /> Technology</label>
+              <label class="checkbox-label"><input type="checkbox" name="interests" value="music" id="check-music" /> Music</label>
+              <label class="checkbox-label"><input type="checkbox" name="interests" value="sports" id="check-sports" /> Sports</label>
+              <label class="checkbox-label"><input type="checkbox" name="interests" value="travel" id="check-travel" /> Travel</label>
+            </div>
+          </fieldset>
+
+          <div class="form-field">
+            <label for="range-experience">Years of Experience: <output id="range-experience-value">5</output></label>
+            <input type="range" id="range-experience" name="experience" min="0" max="30" value="5" />
+          </div>
+
+          <div class="form-field">
+            <label for="textarea-bio">Short Bio</label>
+            <textarea id="textarea-bio" name="bio" rows="4" placeholder="Tell us about yourself..."></textarea>
+          </div>
+
+          <div class="form-field">
+            <label class="checkbox-label"><input type="checkbox" id="check-terms" name="terms" /> I agree to the terms and conditions <span class="required">*</span></label>
+            <span class="field-error" id="error-terms"></span>
+          </div>
+
+          <div class="button-row">
+            <button type="submit" class="btn primary" id="btn-submit-form">Submit</button>
+            <button type="reset" class="btn" id="btn-reset-form">Reset</button>
+          </div>
+        </form>
+
+        <div class="result-panel hidden" id="form-result" aria-live="polite">
+          <h2>Submission Received ✔</h2>
+          <pre id="form-result-json"></pre>
+        </div>
+      </section>
+
+      <!-- ============ TASKS ============ -->
+      <section class="page" id="page-tasks" aria-label="Tasks page">
+        <h1>Tasks</h1>
+        <p class="subtitle">A simple todo list. Add, complete, filter, and delete tasks.</p>
+
+        <form class="task-input-row" id="task-form">
+          <input type="text" id="input-new-task" placeholder="What needs to be done?" aria-label="New task title" />
+          <select id="select-task-priority" aria-label="Task priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+          <button type="submit" class="btn primary" id="btn-add-task">Add Task</button>
+        </form>
+
+        <div class="filter-row" role="group" aria-label="Task filters">
+          <button class="chip active" id="filter-all" data-filter="all">All</button>
+          <button class="chip" id="filter-active" data-filter="active">Active</button>
+          <button class="chip" id="filter-done" data-filter="done">Completed</button>
+          <span class="task-count" id="task-count">0 tasks</span>
+        </div>
+
+        <ul class="task-list" id="task-list" aria-label="Task list"></ul>
+        <p class="muted hidden" id="task-empty">No tasks to show.</p>
+      </section>
+
+      <!-- ============ DATA TABLE ============ -->
+      <section class="page" id="page-table" aria-label="Data table page">
+        <h1>Data Table</h1>
+        <p class="subtitle">Sortable, searchable, paginated employee directory.</p>
+
+        <div class="table-toolbar">
+          <input type="search" id="input-table-search" placeholder="Search by name, role, or city..." aria-label="Search table" />
+          <span class="muted" id="table-result-count"></span>
+        </div>
+
+        <table class="data-table" id="employee-table">
+          <thead>
+            <tr>
+              <th data-sort="id" id="th-id">ID <span class="sort-arrow"></span></th>
+              <th data-sort="name" id="th-name">Name <span class="sort-arrow"></span></th>
+              <th data-sort="role" id="th-role">Role <span class="sort-arrow"></span></th>
+              <th data-sort="city" id="th-city">City <span class="sort-arrow"></span></th>
+              <th data-sort="salary" id="th-salary">Salary <span class="sort-arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="employee-tbody"></tbody>
+        </table>
+
+        <div class="pagination" id="table-pagination">
+          <button class="btn small" id="btn-prev-page">‹ Prev</button>
+          <span id="page-indicator">Page 1 of 1</span>
+          <button class="btn small" id="btn-next-page">Next ›</button>
+        </div>
+      </section>
+
+      <!-- ============ WIDGETS ============ -->
+      <section class="page" id="page-widgets" aria-label="Widgets page">
+        <h1>Widgets</h1>
+        <p class="subtitle">Assorted interactive components.</p>
+
+        <h2>Tabs</h2>
+        <div class="tabs" id="widget-tabs">
+          <div class="tab-bar" role="tablist">
+            <button class="tab active" id="tab-one" data-tab="one" role="tab">First Tab</button>
+            <button class="tab" id="tab-two" data-tab="two" role="tab">Second Tab</button>
+            <button class="tab" id="tab-three" data-tab="three" role="tab">Third Tab</button>
+          </div>
+          <div class="tab-panel active" id="panel-one" role="tabpanel">This is the content of the <strong>first</strong> tab.</div>
+          <div class="tab-panel" id="panel-two" role="tabpanel">The <strong>second</strong> tab holds different content entirely.</div>
+          <div class="tab-panel" id="panel-three" role="tabpanel">And here is the <strong>third</strong> tab's content.</div>
+        </div>
+
+        <h2>Accordion</h2>
+        <div class="accordion" id="widget-accordion">
+          <details id="accordion-1">
+            <summary>What is this app for?</summary>
+            <p>It is a test bench for exercising computer-use automation: clicking, typing, scrolling, and dragging.</p>
+          </details>
+          <details id="accordion-2">
+            <summary>How many pages does it have?</summary>
+            <p>Six pages: Dashboard, Forms, Tasks, Data Table, Widgets, and Settings.</p>
+          </details>
+          <details id="accordion-3">
+            <summary>Does it use any frameworks?</summary>
+            <p>No — plain HTML, CSS, and JavaScript inside Electron.</p>
+          </details>
+        </div>
+
+        <h2>Counter &amp; Progress</h2>
+        <div class="widget-row">
+          <div class="widget-card">
+            <h3>Counter</h3>
+            <div class="counter">
+              <button class="btn" id="btn-counter-minus" aria-label="Decrement">−</button>
+              <span class="counter-value" id="counter-value">0</span>
+              <button class="btn" id="btn-counter-plus" aria-label="Increment">+</button>
+            </div>
+            <button class="btn small" id="btn-counter-reset">Reset</button>
+          </div>
+          <div class="widget-card">
+            <h3>Progress Bar</h3>
+            <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+            <span id="progress-label">0%</span>
+            <div class="button-row">
+              <button class="btn small" id="btn-progress-start">Start</button>
+              <button class="btn small" id="btn-progress-reset">Reset</button>
+            </div>
+          </div>
+          <div class="widget-card">
+            <h3>Toggles</h3>
+            <label class="switch-label"><input type="checkbox" class="switch" id="toggle-a" /> Feature A</label>
+            <label class="switch-label"><input type="checkbox" class="switch" id="toggle-b" checked /> Feature B</label>
+            <label class="switch-label"><input type="checkbox" class="switch" id="toggle-c" /> Feature C</label>
+          </div>
+        </div>
+
+        <h2>Modal &amp; Toasts</h2>
+        <div class="button-row">
+          <button class="btn primary" id="btn-open-modal">Open Modal</button>
+          <button class="btn" id="btn-toast-success">Success Toast</button>
+          <button class="btn" id="btn-toast-error">Error Toast</button>
+        </div>
+
+        <h2>Drag to Reorder</h2>
+        <p class="muted">Drag list items to change their order.</p>
+        <ul class="drag-list" id="drag-list">
+          <li class="drag-item" draggable="true" id="drag-item-1">🥇 First item</li>
+          <li class="drag-item" draggable="true" id="drag-item-2">🥈 Second item</li>
+          <li class="drag-item" draggable="true" id="drag-item-3">🥉 Third item</li>
+          <li class="drag-item" draggable="true" id="drag-item-4">🎖 Fourth item</li>
+        </ul>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section class="page" id="page-settings" aria-label="Settings page">
+        <h1>Settings</h1>
+        <p class="subtitle">Appearance preferences and native OS integrations.</p>
+
+        <h2>Appearance</h2>
+        <div class="form-field">
+          <label for="select-theme">Theme</label>
+          <select id="select-theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="select-fontsize">Font Size</label>
+          <select id="select-fontsize">
+            <option value="14">Small</option>
+            <option value="16" selected>Medium</option>
+            <option value="18">Large</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="input-display-name">Display Name (shown on Dashboard)</label>
+          <input type="text" id="input-display-name" placeholder="Your name" />
+        </div>
+
+        <h2>Native Features</h2>
+        <div class="button-row">
+          <button class="btn" id="btn-native-message">Show Message Box</button>
+          <button class="btn" id="btn-native-open">Open File Dialog</button>
+          <button class="btn" id="btn-native-notification">System Notification</button>
+        </div>
+        <p class="muted" id="native-result" aria-live="polite"></p>
+
+        <h2>Clipboard</h2>
+        <div class="clipboard-row">
+          <input type="text" id="input-clipboard" placeholder="Text to copy" aria-label="Clipboard text" />
+          <button class="btn" id="btn-clipboard-copy">Copy</button>
+          <button class="btn" id="btn-clipboard-paste">Paste Below</button>
+        </div>
+        <p id="clipboard-output" class="muted">Clipboard contents will appear here.</p>
+
+        <h2>About</h2>
+        <table class="info-table" id="about-table">
+          <tbody>
+            <tr><td>App Version</td><td id="about-app">—</td></tr>
+            <tr><td>Electron</td><td id="about-electron">—</td></tr>
+            <tr><td>Chromium</td><td id="about-chrome">—</td></tr>
+            <tr><td>Node.js</td><td id="about-node">—</td></tr>
+            <tr><td>Platform</td><td id="about-platform">—</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title">Example Modal</h2>
+      <p>This is a modal dialog. It traps attention and must be dismissed with one of the buttons below.</p>
+      <div class="form-field">
+        <label for="modal-input">Type something to confirm:</label>
+        <input type="text" id="modal-input" placeholder="e.g. CONFIRM" />
+      </div>
+      <div class="button-row">
+        <button class="btn primary" id="btn-modal-confirm">Confirm</button>
+        <button class="btn" id="btn-modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
