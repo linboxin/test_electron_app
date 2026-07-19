@@ -116,6 +116,7 @@ function driverEnvironment(variant, _appInstance, options = {}) {
     'USER',
     'LOGNAME',
     'DISPLAY',
+    'XAUTHORITY',
     'WAYLAND_DISPLAY',
     'XDG_RUNTIME_DIR',
     'DBUS_SESSION_BUS_ADDRESS',

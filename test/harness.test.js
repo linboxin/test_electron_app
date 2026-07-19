@@ -466,7 +466,13 @@ test('run config requires a pinned model and one driver per unique variant', () 
 
 test('driver environment excludes ambient secrets and benchmark control paths', (t) => {
   process.env.ACP_TEST_PARENT_SECRET = 'must-not-leak';
-  t.after(() => delete process.env.ACP_TEST_PARENT_SECRET);
+  const priorXauthority = process.env.XAUTHORITY;
+  process.env.XAUTHORITY = '/tmp/test-driver-xauthority';
+  t.after(() => {
+    delete process.env.ACP_TEST_PARENT_SECRET;
+    if (priorXauthority === undefined) delete process.env.XAUTHORITY;
+    else process.env.XAUTHORITY = priorXauthority;
+  });
   const app = {
     child: { pid: 123 },
     registration: { appId: 'com.linboxin.test-bench' },
@@ -489,6 +495,7 @@ test('driver environment excludes ambient secrets and benchmark control paths', 
   assert.equal(env.EXPLICIT_PROVIDER_KEY, 'allowed-by-config');
   assert.equal(env.ACP_BENCHMARK_STATE_FILE, undefined);
   assert.equal(env.ACP_HOME, '/isolated/empty');
+  assert.equal(env.XAUTHORITY, '/tmp/test-driver-xauthority');
   assert.equal(
     driverEnvironment('screenshot', app, { emptyAcpHome: '/isolated/empty' }).ACP_HOME,
     '/isolated/empty'
@@ -497,8 +504,15 @@ test('driver environment excludes ambient secrets and benchmark control paths', 
 
 test('benchmark Electron process receives only the platform environment allowlist', (t) => {
   process.env.ACP_TEST_APP_PARENT_SECRET = 'must-not-reach-electron';
-  t.after(() => delete process.env.ACP_TEST_APP_PARENT_SECRET);
+  const priorXauthority = process.env.XAUTHORITY;
+  process.env.XAUTHORITY = '/tmp/test-xauthority';
+  t.after(() => {
+    delete process.env.ACP_TEST_APP_PARENT_SECRET;
+    if (priorXauthority === undefined) delete process.env.XAUTHORITY;
+    else process.env.XAUTHORITY = priorXauthority;
+  });
   const env = platformEnvironment();
   assert.equal(env.ACP_TEST_APP_PARENT_SECRET, undefined);
   assert.equal(env.PATH, process.env.PATH);
+  assert.equal(env.XAUTHORITY, '/tmp/test-xauthority');
 });
