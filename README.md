@@ -6,7 +6,7 @@ for testing computer-use / UI-automation capabilities.
 ## Run
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -41,3 +41,28 @@ node packages/cli/dist/bin.js watch com.linboxin.test-bench   # then click aroun
 ```
 
 ACP packages are vendored as tarballs in `vendor/` until they're published to npm.
+
+## Deterministic benchmark mode
+
+Benchmark mode is opt-in and resets the app on every launch or renderer reload:
+
+```bash
+ACP_BENCHMARK=1 npm start
+```
+
+It fixes the default window at `1200×800` at `(100, 80)`, clears persisted renderer settings, and restores the canonical fixture:
+
+- dashboard active, zero recorded clicks and form submissions;
+- the original three tasks, with task 2 incomplete;
+- employee table query empty, id ascending, page 1;
+- light theme, 16 px font, and no display name.
+
+The benchmark harness supplies a fresh Chromium profile, runtime, and driver working directory for every trial, waits for the exact 11-action/5-state/1-event surface, and evaluates raw application state through a benchmark-only IPC snapshot that is not exposed over ACP. The controlled target is withheld until a driver has attested readiness and exact capabilities; timed success then requires both correct independent state and a structured final report. Provider, model, modality, request, and usage records are trusted-adapter attestations checked for internal consistency, not independent proof from a model provider.
+
+```bash
+npm test
+npm run test:integration
+npm run benchmark -- doctor
+```
+
+See [`benchmark/README.md`](benchmark/README.md) for the canonical prompt, driver contract, trial commands, artifact validation, timing boundaries, provenance pins, and fail-closed publication rules. The included scripted ACP driver is a harness smoke test only; it is deliberately marked non-publishable and is not evidence of agent speed.

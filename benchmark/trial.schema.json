@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:appcontextprotocol:benchmark-trial:v1",
+  "title": "ACP benchmark trial record",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "trialId",
+    "variant",
+    "fixture",
+    "promptHash",
+    "model",
+    "driver",
+    "measurementEligible",
+    "publishable",
+    "publicationReasons",
+    "outcome",
+    "timing",
+    "metrics",
+    "evaluation",
+    "finalEvaluation",
+    "protocolValidation",
+    "agentEvidence",
+    "auditValidation",
+    "artifactValidation",
+    "artifactIntegrity",
+    "implementation",
+    "environmentFingerprint",
+    "perturbation",
+    "infrastructureError",
+    "cleanup",
+    "recordedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "trialId": { "type": "string", "minLength": 1 },
+    "variant": { "enum": ["screenshot", "accessibility", "acp", "hybrid"] },
+    "fixture": { "const": "canonical-v1" },
+    "promptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "model": { "type": "string", "minLength": 1 },
+    "driver": {
+      "type": "object",
+      "required": ["name", "kind", "capabilities", "exit"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "type": "string" },
+        "capabilities": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "exit": { "type": ["object", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "measurementEligible": { "type": "boolean" },
+    "publishable": { "type": "boolean" },
+    "publicationReasons": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "outcome": {
+      "enum": ["success", "incorrect_result", "partial", "timeout", "infrastructure_failure"]
+    },
+    "timing": {
+      "type": "object",
+      "required": [
+        "appLaunchReadyMs",
+        "endToEndMs",
+        "stateSatisfiedMs",
+        "agentFinalMs",
+        "evaluatorLagMs",
+        "completedWithinDeadline",
+        "timeoutMs",
+        "evaluatorPollMs"
+      ],
+      "properties": {
+        "appLaunchReadyMs": { "type": ["number", "null"], "minimum": 0 },
+        "endToEndMs": { "type": ["number", "null"], "minimum": 0 },
+        "stateSatisfiedMs": { "type": ["number", "null"], "minimum": 0 },
+        "agentFinalMs": { "type": ["number", "null"], "minimum": 0 },
+        "evaluatorLagMs": { "type": ["number", "null"] },
+        "completedWithinDeadline": { "type": "boolean" },
+        "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+        "evaluatorPollMs": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "modelTurns",
+        "usageRecords",
+        "observations",
+        "screenshotObservations",
+        "accessibilityObservations",
+        "uiActionAttempts",
+        "acpCallAttempts",
+        "uiActions",
+        "acpCalls",
+        "toolErrors",
+        "toolDurationMs",
+        "hostDurationMs",
+        "recoveryLoops",
+        "inputTokens",
+        "outputTokens",
+        "estimatedCostUsd"
+      ],
+      "properties": {
+        "modelTurns": { "type": "number", "minimum": 0 },
+        "usageRecords": { "type": "number", "minimum": 0 },
+        "observations": { "type": "number", "minimum": 0 },
+        "screenshotObservations": { "type": "number", "minimum": 0 },
+        "accessibilityObservations": { "type": "number", "minimum": 0 },
+        "uiActionAttempts": { "type": "number", "minimum": 0 },
+        "acpCallAttempts": { "type": "number", "minimum": 0 },
+        "uiActions": { "type": "number", "minimum": 0 },
+        "acpCalls": { "type": "number", "minimum": 0 },
+        "toolErrors": { "type": "number", "minimum": 0 },
+        "toolDurationMs": { "type": "number", "minimum": 0 },
+        "hostDurationMs": { "type": "number", "minimum": 0 },
+        "recoveryLoops": { "type": "number", "minimum": 0 },
+        "inputTokens": { "type": "number", "minimum": 0 },
+        "outputTokens": { "type": "number", "minimum": 0 },
+        "estimatedCostUsd": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "initialFixture": { "type": ["object", "null"] },
+    "evaluation": {
+      "type": "object",
+      "required": ["success", "assertions"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "assertions": { "type": "object", "additionalProperties": { "type": "boolean" } }
+      },
+      "additionalProperties": true
+    },
+    "finalEvaluation": {
+      "type": "object",
+      "required": ["success"],
+      "properties": { "success": { "type": "boolean" } },
+      "additionalProperties": true
+    },
+    "protocolValidation": {
+      "type": "object",
+      "required": ["valid", "errors"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "agentEvidence": {
+      "type": "object",
+      "required": ["valid", "required", "errors", "modelTurns", "providerUsageRecords"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "required": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "type": "string" } },
+        "modelTurns": { "type": "number", "minimum": 0 },
+        "providerUsageRecords": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "auditValidation": { "type": "object" },
+    "artifactValidation": { "type": "object" },
+    "artifactIntegrity": {
+      "type": "object",
+      "required": ["valid", "manifest", "manifestSha256", "fileCount", "totalBytes"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "manifest": { "type": ["string", "null"] },
+        "manifestSha256": {
+          "anyOf": [
+            { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            { "type": "null" }
+          ]
+        },
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "totalBytes": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "implementation": { "type": "object" },
+    "environmentFingerprint": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "perturbation": { "type": "object" },
+    "infrastructureError": { "type": ["object", "null"] },
+    "cleanup": {
+      "type": "object",
+      "required": ["runtimeRemoved", "emptyAcpHomeRemoved", "driverCwdRemoved"],
+      "properties": {
+        "runtimeRemoved": { "type": "boolean" },
+        "emptyAcpHomeRemoved": { "type": "boolean" },
+        "driverCwdRemoved": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": { "type": "object" },
+    "recordedAt": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}
