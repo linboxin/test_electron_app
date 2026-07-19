@@ -1,18 +1,31 @@
 // ---------- Helpers ----------
 const $ = (id) => document.getElementById(id);
 
-const state = {
-  clicks: 0,
-  formsSubmitted: 0,
-  tasks: [
-    { id: 1, title: 'Try out the Forms page', priority: 'medium', done: false },
-    { id: 2, title: 'Sort the data table by salary', priority: 'low', done: false },
-    { id: 3, title: 'Toggle dark mode in Settings', priority: 'high', done: true }
-  ],
-  nextTaskId: 4,
-  taskFilter: 'all',
-  table: { sortKey: 'id', sortAsc: true, page: 1, perPage: 10, query: '' }
-};
+const query = new URLSearchParams(window.location.search);
+const benchmarkMode = query.get('benchmark') === '1';
+const benchmarkFixture = query.get('fixture') || 'canonical-v1';
+const renderDelayMs = Math.max(0, Number(query.get('renderDelayMs')) || 0);
+
+if (benchmarkMode) localStorage.clear();
+
+function createInitialState() {
+  return {
+    clicks: 0,
+    formsSubmitted: 0,
+    tasks: [
+      { id: 1, title: 'Try out the Forms page', priority: 'medium', done: false },
+      { id: 2, title: 'Sort the data table by salary', priority: 'low', done: false },
+      { id: 3, title: 'Toggle dark mode in Settings', priority: 'high', done: true }
+    ],
+    nextTaskId: 4,
+    taskFilter: 'all',
+    table: { sortKey: 'id', sortAsc: true, page: 1, perPage: 10, query: '' }
+  };
+}
+
+const state = createInitialState();
+let benchmarkReady = false;
+let benchmarkRevision = 0;
 
 function logActivity(message) {
   const log = $('activity-log');
@@ -42,12 +55,15 @@ function updateStats() {
   $('stat-forms-value').textContent = state.formsSubmitted;
   window.acp?.notifyStateChanged('app_view');
   window.acp?.notifyStateChanged('tasks');
+  publishBenchmarkState();
 }
 
 document.addEventListener('click', (e) => {
   if (e.target.closest('button')) {
     state.clicks++;
     $('stat-clicks-value').textContent = state.clicks;
+    window.acp?.notifyStateChanged('app_view');
+    publishBenchmarkState();
   }
 });
 
@@ -57,6 +73,7 @@ function navigate(page) {
   document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === `page-${page}`));
   logActivity(`Navigated to ${page} page`);
   window.acp?.notifyStateChanged('app_view');
+  publishBenchmarkState();
 }
 
 document.querySelectorAll('.nav-item').forEach((btn) => {
@@ -207,6 +224,7 @@ document.querySelectorAll('.filter-row .chip').forEach((chip) => {
     state.taskFilter = chip.dataset.filter;
     document.querySelectorAll('.filter-row .chip').forEach((c) => c.classList.toggle('active', c === chip));
     renderTasks();
+    publishBenchmarkState();
   });
 });
 
@@ -224,14 +242,70 @@ const employees = Array.from({ length: 50 }, (_, i) => ({
   salary: 52000 + ((i * 3517) % 90000)
 }));
 
+function matchingEmployees(queryText = state.table.query) {
+  const normalized = queryText.trim().toLowerCase();
+  return employees.filter((emp) =>
+    !normalized
+    || emp.name.toLowerCase().includes(normalized)
+    || emp.role.toLowerCase().includes(normalized)
+    || emp.city.toLowerCase().includes(normalized)
+  );
+}
+
+function publishBenchmarkState() {
+  if (!benchmarkMode || typeof window.api?.reportBenchmarkState !== 'function') return;
+  const matches = matchingEmployees();
+  window.api.reportBenchmarkState({
+    schemaVersion: 1,
+    fixture: benchmarkFixture,
+    ready: benchmarkReady,
+    revision: ++benchmarkRevision,
+    generatedAt: new Date().toISOString(),
+    tasks: state.tasks.map((task) => ({ ...task })),
+    nextTaskId: state.nextTaskId,
+    table: {
+      ...state.table,
+      resultCount: matches.length,
+      totalRows: employees.length,
+      matchingEmployeeIds: matches.map((employee) => employee.id)
+    },
+    settings: {
+      theme: localStorage.getItem('theme') || 'light',
+      appliedTheme: document.documentElement.dataset.theme || 'light',
+      fontSize: Number(localStorage.getItem('fontSize') || '16'),
+      displayName: localStorage.getItem('displayName') || ''
+    },
+    ui: {
+      page: document.querySelector('.nav-item.active')?.dataset.page || 'dashboard',
+      taskFilter: state.taskFilter,
+      clicks: state.clicks,
+      formsSubmitted: state.formsSubmitted,
+      openOverlays: $('modal-overlay')?.classList.contains('hidden') ? [] : ['example-modal']
+    },
+    environment: {
+      devicePixelRatio: window.devicePixelRatio,
+      screen: {
+        width: window.screen.width,
+        height: window.screen.height,
+        availWidth: window.screen.availWidth,
+        availHeight: window.screen.availHeight
+      },
+      window: {
+        x: window.screenX,
+        y: window.screenY,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight
+      }
+    }
+  });
+}
+
 function renderTable() {
   const { sortKey, sortAsc, page, perPage, query } = state.table;
 
-  let rows = employees.filter((emp) => {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return emp.name.toLowerCase().includes(q) || emp.role.toLowerCase().includes(q) || emp.city.toLowerCase().includes(q);
-  });
+  const rows = matchingEmployees(query);
 
   rows.sort((a, b) => {
     const av = a[sortKey];
@@ -266,6 +340,8 @@ function renderTable() {
   document.querySelectorAll('#employee-table th').forEach((th) => {
     th.querySelector('.sort-arrow').textContent = th.dataset.sort === sortKey ? (sortAsc ? '▲' : '▼') : '';
   });
+  window.acp?.notifyStateChanged('table_view');
+  publishBenchmarkState();
 }
 
 document.querySelectorAll('#employee-table th').forEach((th) => {
@@ -374,6 +450,11 @@ document.querySelectorAll('.drag-item').forEach((item) => {
 });
 
 // ---------- Settings page ----------
+function notifySettingsChanged() {
+  window.acp?.notifyStateChanged('settings');
+  publishBenchmarkState();
+}
+
 function applySettings() {
   const theme = localStorage.getItem('theme') || 'light';
   const fontSize = localStorage.getItem('fontSize') || '16';
@@ -385,6 +466,7 @@ function applySettings() {
   $('select-fontsize').value = fontSize;
   $('input-display-name').value = displayName;
   $('dashboard-greeting').textContent = displayName ? `Welcome back, ${displayName}!` : 'Welcome back!';
+  notifySettingsChanged();
 }
 
 $('select-theme').addEventListener('change', (e) => {
@@ -401,6 +483,7 @@ $('select-fontsize').addEventListener('change', (e) => {
 $('input-display-name').addEventListener('input', (e) => {
   localStorage.setItem('displayName', e.target.value.trim());
   $('dashboard-greeting').textContent = e.target.value.trim() ? `Welcome back, ${e.target.value.trim()}!` : 'Welcome back!';
+  notifySettingsChanged();
 });
 
 $('btn-native-message').addEventListener('click', async () => {
@@ -504,11 +587,18 @@ function initAcp() {
       )
     },
     ({ title, priority }) => {
-      const task = { id: state.nextTaskId++, title, priority: priority || 'medium', done: false };
+      const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+      if (!normalizedTitle) throw new Error('task title must not be empty');
+      const task = {
+        id: state.nextTaskId++,
+        title: normalizedTitle,
+        priority: priority || 'medium',
+        done: false
+      };
       state.tasks.push(task);
       renderTasks();
       updateStats();
-      logActivity(`Task "${title}" added`);
+      logActivity(`Task "${normalizedTitle}" added`);
       return task;
     }
   );
@@ -534,6 +624,7 @@ function initAcp() {
     {
       name: 'delete_task',
       description: 'Delete a task from the list',
+      confirm: true,
       destructive: true,
       paramsSchema: obj({ taskId: { type: 'integer' } }, ['taskId'])
     },
@@ -635,7 +726,6 @@ function initAcp() {
       localStorage.setItem('theme', theme);
       applySettings();
       logActivity(`Theme changed to ${theme}`);
-      window.acp?.notifyStateChanged('settings');
       return { theme };
     }
   );
@@ -669,9 +759,16 @@ function initAcp() {
 }
 
 // ---------- Init ----------
-applySettings();
-renderTasks();
-renderTable();
-updateStats();
-loadAppInfo();
-initAcp();
+function startApp() {
+  initAcp();
+  applySettings();
+  renderTasks();
+  renderTable();
+  updateStats();
+  loadAppInfo();
+  benchmarkReady = true;
+  publishBenchmarkState();
+}
+
+if (benchmarkMode && renderDelayMs > 0) setTimeout(startApp, renderDelayMs);
+else startApp();

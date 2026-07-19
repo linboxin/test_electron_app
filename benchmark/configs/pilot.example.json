@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "runId": "pilot-replace-me",
+  "variants": ["screenshot", "hybrid"],
+  "trialsPerVariant": 20,
+  "minimumPublishableTrialsPerVariant": 20,
+  "seed": "replace-with-a-recorded-seed",
+  "timeoutMs": 180000,
+  "headless": false,
+  "window": { "x": 100, "y": 80, "width": 1200, "height": 800 },
+  "drivers": {
+    "screenshot": {
+      "command": "/absolute/path/to/agent-adapter",
+      "commandFile": "/absolute/path/to/agent-adapter",
+      "args": ["--profile", "screenshot"],
+      "name": "replace-me",
+      "kind": "agent",
+      "capabilityProfile": "screenshot",
+      "provider": "replace-with-provider-id",
+      "model": "replace-with-pinned-model-id",
+      "agentConfigFile": "/absolute/path/to/agent-config.json",
+      "baseInstructionFile": "/absolute/path/to/base-instruction.txt",
+      "samplingFile": "/absolute/path/to/sampling-config.json",
+      "agentConfigHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "baseInstructionHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "samplingHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "envNames": []
+    },
+    "hybrid": {
+      "command": "/absolute/path/to/agent-adapter",
+      "commandFile": "/absolute/path/to/agent-adapter",
+      "args": ["--profile", "hybrid"],
+      "name": "replace-me",
+      "kind": "agent",
+      "capabilityProfile": "hybrid",
+      "provider": "replace-with-provider-id",
+      "model": "replace-with-pinned-model-id",
+      "agentConfigFile": "/absolute/path/to/agent-config.json",
+      "baseInstructionFile": "/absolute/path/to/base-instruction.txt",
+      "samplingFile": "/absolute/path/to/sampling-config.json",
+      "agentConfigHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "baseInstructionHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "samplingHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "envNames": []
+    }
+  }
+}
