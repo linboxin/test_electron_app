@@ -20,13 +20,13 @@ Implemented and tested:
 
 Still required before a headline comparison:
 
-- controlled agent adapters for screenshot, accessibility, ACP, and hybrid profiles;
-- a five-trial-per-variant pilot;
+- one controlled agent adapter that supports both the screenshot baseline and ACP-augmented hybrid profile;
+- a five-trial-per-variant pilot of that additive-tool comparison;
 - 20–30 trials per primary variant for publication;
 - robustness runs and clean-machine reproduction;
 - screenshot/video capture integration and model usage/cost reporting from each adapter.
 
-The full project-level evidence policy is tracked in [ACP documentation PR #1](https://github.com/linboxin/appcontextprotocol/pull/1). That documentation change is a merge dependency for this harness branch; land it first so the canonical `docs/benchmark.md` file exists on ACP `main`.
+The full project-level evidence policy lives in the canonical [ACP benchmark methodology](https://github.com/linboxin/appcontextprotocol/blob/main/docs/benchmark.md). That documentation is a merge dependency for this harness branch.
 
 ## Canonical task
 
@@ -93,12 +93,14 @@ There is no ACP `reset_benchmark` action. The tested agent cannot reset or query
 
 The driver must declare exactly one of these allowlists in `driver.ready`:
 
-| Variant | Allowed capabilities |
-| --- | --- |
-| `screenshot` | `screenshot`, `pointer`, `keyboard`, `text` |
-| `accessibility` | screenshot profile plus `accessibility` |
-| `acp` | `acp` only |
-| `hybrid` | ACP plus screenshot, pointer, keyboard, and text |
+| Variant | Role | Allowed capabilities |
+| --- | --- | --- |
+| `screenshot` | Primary controlled baseline | `screenshot`, `pointer`, `keyboard`, `text` |
+| `hybrid` | Primary ACP-augmented treatment | baseline capabilities plus `acp` |
+| `accessibility` | Secondary non-ACP ablation | baseline capabilities plus `accessibility` |
+| `acp` | Diagnostic protocol-sufficiency ablation | `acp` only |
+
+The headline experiment compares `screenshot` with `hybrid`: the same model, prompt, base instructions, sampling controls, adapter build, and ordinary computer-use capabilities, with ACP as the sole addition. The adapter may expose several UI tools or action types under the `ui` event kind; this is not a single-tool-agent comparison. Unrestricted shell, DOM, filesystem, evaluator, and other bypass paths remain outside both profiles so they cannot solve the fixture through application internals.
 
 The harness rejects a mismatched or stronger declaration before timing starts. It then rejects event streams containing undeclared observation or tool kinds, malformed/unpaired tool events, work before `start`, or unexpected events after `final`. ACP/hybrid tool attempts are cross-checked by count and action name against the app's ACP audit log; visual-only profiles must leave that audit empty.
 
@@ -108,9 +110,7 @@ Provider and model identifiers, request-id hashes, the capability profile/modali
 
 Before production adapters support a headline comparison, their tool-boundary enforcement must be reviewed and auditable, and each inference must retain a redacted provider receipt or equivalent provider-origin record that can be reconciled to the request-id hash. Production provenance must also pin a reviewed runtime/build manifest covering the adapter dependency closure, wrapper resources, interpreter/runtime, lockfile, and relevant launch configuration. The current entrypoint hash is useful, but by itself it does not pin that complete execution environment.
 
-For the hybrid profile, pin this policy in the agent instructions:
-
-> When controlling a desktop application, check for a matching ACP application first. Prefer semantic state and typed actions. Use computer use when the required capability is not exposed, when interacting with confirmation UI, or when visual verification is necessary.
+Do not add an ACP-preference instruction to the primary `hybrid` profile. The model must discover and choose ACP from the added tool surface. An ACP-informed policy can be studied in a separately labelled run, but changing the instructions makes that run ineligible for aggregation with the primary additive-tool comparison.
 
 ## Driver protocol
 
@@ -119,7 +119,7 @@ Drivers communicate with the harness as newline-delimited JSON over stdin/stdout
 The driver first emits this before creating the tested conversation or inspecting the app. `capabilityProfile` is the configured variant name; `adapterBuildHash` is computed by the harness from the resolved adapter entrypoint and is not a user-authored placeholder:
 
 ```json
-{"type":"driver.ready","schemaVersion":1,"name":"my-driver","kind":"agent","model":"pinned-model-id","capabilityProfile":"acp","conversationCreated":false,"appInspected":false,"capabilities":["acp"]}
+{"type":"driver.ready","schemaVersion":1,"name":"my-driver","kind":"agent","model":"pinned-model-id","capabilityProfile":"hybrid","conversationCreated":false,"appInspected":false,"capabilities":["screenshot","pointer","keyboard","text","acp"]}
 ```
 
 Only after validating `driver.ready` does the timed `start` message supply the prompt, variant, pinned model id, fixture, driver artifact directory, and target app id/pid. ACP/hybrid drivers also receive the live ACP home path in `start`; the pre-ready `ACP_HOME` is an empty isolated directory. The message never contains the evaluator or raw-state path.
@@ -141,13 +141,13 @@ See [`driver-protocol.md`](driver-protocol.md) for the full contract.
 
 ```bash
 npm run benchmark -- run-one \
-  --variant acp \
+  --variant hybrid \
   --model pinned-model-id \
   --driver-name my-agent-adapter \
   --driver-kind agent \
   --timeout-ms 180000 \
-  --output benchmark-results/acp-one \
-  -- /absolute/path/to/driver --profile acp
+  --output benchmark-results/hybrid-one \
+  -- /absolute/path/to/driver --profile hybrid
 ```
 
 The primary timer starts only after `driver.ready`, when the harness writes the `start` event containing the target. Fresh conversation creation and app-specific MCP/tool discovery must occur after that event. A successful end-to-end measurement ends only after both independent state success and a valid structured final event. `stateSatisfiedMs` records the earlier state-only milestone when present; `agentFinalMs` records final-event arrival, and app launch/readiness remains separate as `appLaunchReadyMs`.
@@ -162,9 +162,9 @@ npm run benchmark -- run --config benchmark/configs/pilot.json \
   --output benchmark-results/pilot-20260718
 ```
 
-As checked in, the example schedules 20 trials per variant (80 total across four variants), the minimum dataset-evidence run. For a diagnostic pilot, set only `trialsPerVariant` to 5 while leaving `minimumPublishableTrialsPerVariant` at 20; that produces 20 total trials and its evidence gate must fail. Every block contains one run of each variant in seeded random order, reducing drift from model service conditions and machine state. Use 20–30 trials per primary variant for the evidence dataset; 30 is preferred when service variance is high. The config key `minimumPublishableTrialsPerVariant` is retained for schema compatibility, but its precise meaning is the minimum dataset-eligible attempt count; it cannot be set below 20 and does not grant project-level publication approval.
+As checked in, the example schedules 20 trials for each primary variant (40 total across `screenshot` and `hybrid`), the minimum dataset-evidence run. For a diagnostic pilot, set only `trialsPerVariant` to 5 while leaving `minimumPublishableTrialsPerVariant` at 20; that produces 10 total trials and its evidence gate must fail. Every block contains one run of each variant in seeded random order, reducing drift from model service conditions and machine state. Use 20–30 trials per primary variant for the evidence dataset; 30 is preferred when service variance is high. Run `accessibility` and ACP-only ablations separately so they cannot be mistaken for the headline treatment. The config key `minimumPublishableTrialsPerVariant` is retained for schema compatibility, but its precise meaning is the minimum dataset-eligible attempt count; it cannot be set below 20 and does not grant project-level publication approval.
 
-All compared variants must declare exactly the same `model`, `provider`, `agentConfigHash`, `baseInstructionHash`, and `samplingHash`. They must use the same adapter entrypoint bytes: the harness resolves `commandFile`, computes `adapterBuildHash` from its SHA-256, and requires that build identity to match across variants. Each driver config supplies a `capabilityProfile` equal to its variant (`screenshot`, `accessibility`, `acp`, or `hybrid`); that profile is the only intentional tool-surface difference and is excluded from `agentConfigHash`.
+All compared variants must declare exactly the same `model`, `provider`, `agentConfigHash`, `baseInstructionHash`, and `samplingHash`. They must use the same adapter entrypoint bytes: the harness resolves `commandFile`, computes `adapterBuildHash` from its SHA-256, and requires that build identity to match across variants. Each driver config supplies a `capabilityProfile` equal to its variant (`screenshot`, `accessibility`, `acp`, or `hybrid`); that profile is the only intentional tool-surface difference and is excluded from `agentConfigHash`. The primary example deliberately configures only `screenshot` and `hybrid`.
 
 The three config-authored hashes have canonical inputs and absolute source-file fields:
 
@@ -174,7 +174,7 @@ The three config-authored hashes have canonical inputs and absolute source-file 
 
 For these fields, canonical JSON means recursively sorted object keys, array order preserved, omitted `undefined` values, and compact `JSON.stringify` output encoded as UTF-8 with no trailing newline. The harness resolves the three absolute source files, verifies their byte hashes at creation and resume, and pins their paths; preserve and publish reviewed copies with the run evidence. All-zero digests, example values, hashes of undocumented inputs, and placeholders such as `replace-me` are not valid evidence.
 
-Each adapter entrypoint must be an absolute `commandFile`, and that same absolute file must be invoked directly as `command` or appear in `args`. For example, a Node adapter uses an absolute Node executable (or `node` from the pinned environment), the absolute adapter file as the first argument, and then `--profile acp`. Do not configure a driver `cwd` for an evidence run: the harness creates a new empty working directory for every trial.
+Each adapter entrypoint must be an absolute `commandFile`, and that same absolute file must be invoked directly as `command` or appear in `args`. For example, a Node adapter uses an absolute Node executable (or `node` from the pinned environment), the absolute adapter file as the first argument, and then `--profile hybrid`. Do not configure a driver `cwd` for an evidence run: the harness creates a new empty working directory for every trial.
 
 `adapterBuildHash` currently hashes only the resolved entrypoint file. For a production evidence run, retain and hash the fuller runtime/build manifest described above and bind it to the run identity; do not interpret entrypoint equality as dependency-closure or runtime equality.
 
@@ -191,7 +191,7 @@ At creation, the harness writes `config.pinned.json` and records hashes for the 
 
 The automated **run/dataset evidence gate** is fail-closed. A trial is excluded for failed attestation or protocol validation, missing adapter-attested provider/model/request records, missing/invalid required observations, ACP audit mismatch, redaction findings, infrastructure failure, headless mode, dirty source, a non-agent driver, an explicit driver `cwd`, or missing provenance pins. A single well-formed but incorrect final report is a measured task failure—not an exclusion—so it remains in the eligible success-rate denominator; a missing, duplicate, or protocol-invalid final event is infrastructure-invalid evidence. At run level, every retained record must be eligible, every configured adapter must be an agent using the isolated working directory, the same adapter build and common configuration must be used across variants, all eligible records must share one recorded environment fingerprint, provenance must remain consistent, the schedule must be complete without preserved interrupted attempts, and every compared variant must have at least 20 eligible attempts. Passing this gate establishes internal consistency under the trusted-adapter assumption; it does not upgrade adapter attestations into provider-origin proof.
 
-`measurementEligible` is the canonical raw-record field for “eligible for this dataset”; `publishable` remains a compatibility alias with the same value. A CLI gate result means only that one run satisfies the automated evidence checks. It is not approval for a public ACP speed claim. Project-level publication also requires the separate robustness experiment, clean-machine reproduction, representative recording, raw-result review, and claim review defined in ACP documentation PR #1.
+`measurementEligible` is the canonical raw-record field for “eligible for this dataset”; `publishable` remains a compatibility alias with the same value. A CLI gate result means only that one run satisfies the automated evidence checks. It is not approval for a public ACP speed claim. Project-level publication also requires the separate robustness experiment, clean-machine reproduction, representative recording, raw-result review, and claim review defined in the canonical ACP benchmark methodology linked above.
 
 ## Artifacts
 
