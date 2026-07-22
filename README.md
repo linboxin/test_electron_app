@@ -1,4 +1,4 @@
-# Computer-Use Test Bench
+# Computer-Use Test Bench   (REPO IS OUTDATED)
 
 A basic Electron app with varied pages and interactive components, built as a target
 for testing computer-use / UI-automation capabilities.
